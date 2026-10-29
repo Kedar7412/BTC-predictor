@@ -83,6 +83,23 @@ def test_walkforward_runs_and_reports_neighbourhood(sigs):
     assert wf["default_config"] == SW.base_config(s)
 
 
+def test_evaluate_only_simulates_needed_segments(sigs):
+    s = Settings()
+    segs = SW.segment_plan(len(sigs.ws), 2, 1)
+    market = SW.market_for(SC.REFERENCE)
+    cfg = SW.base_config(s)
+    k = SW.key_of(cfg)
+    part: dict = {}
+    SW.evaluate(lambda mw: sigs, s, [cfg, cfg], segs, market, 1, part, only={k: {0, 1}})
+    assert [r is not None for r in part[k]] == [i in (0, 1) for i in range(len(segs))]
+    full: dict = {}
+    SW.evaluate(lambda mw: sigs, s, [cfg], segs, market, 1, full)
+    assert all(r is not None for r in full[k])
+    assert part[k][0] == full[k][0] and part[k][1] == full[k][1]
+    SW.evaluate(lambda mw: sigs, s, [cfg], segs, market, 1, part)  # fills the missing segments
+    assert part[k] == full[k]
+
+
 def test_montecarlo_deterministic_and_ordered():
     rng = np.random.default_rng(1)
     pnl = rng.normal(0.5, 5.0, 400)
