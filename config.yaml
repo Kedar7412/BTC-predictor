@@ -1,0 +1,32 @@
+# Paper mode is the default. Live requires --live AND CONFIRM_LIVE=yes.
+bankroll: 1000.0
+tick_seconds: 5
+window_seconds: 300
+
+# Entry gates (ALL must pass)
+min_edge: 0.06          # model_prob - effective buy price
+min_ev: 0.04            # expected value per share in USDC after fees
+min_conviction: 0.62    # model probability of the chosen side
+min_roi: 0.08
+market_shrink: 0.3       # weight of market mid when computing EV (calibration guard)
+
+# Cost model
+fee_rate: 0.02          # fee ~ fee_rate * p * (1-p) per share (conservative)
+slippage: 0.005
+
+# Sizing and risk
+kelly_fraction: 0.25
+max_stake_per_trade: 50.0
+max_daily_loss: 100.0
+max_open_positions: 1
+max_spread: 0.05
+min_liquidity_usd: 25.0
+no_trade_first_seconds: 60
+no_trade_last_seconds: 45
+cooldown_seconds: 0
+
+# Model
+default_sigma_per_sqrt_s: 0.00009
+min_vol_samples: 8
+vol_window_seconds: 600
+momentum_weight: 0.15
