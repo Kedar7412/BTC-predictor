@@ -5,3 +5,7 @@ state.json
 __pycache__/
 *.egg-info/
 .pytest_cache/
+bt_data/
+bt_*/
+books.jsonl
+*.npz

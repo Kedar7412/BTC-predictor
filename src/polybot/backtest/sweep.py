@@ -73,22 +73,33 @@ def neighbours(cfg: dict, fixed_momentum: bool = False) -> list[dict]:
 
 
 def evaluate(get_sigs, s: Settings, configs: list[dict], segs: list[tuple[int, int]], market: dict,
-             workers: int, cache: dict, label: str = "sweep") -> None:
-    """Fill cache[key] = list of per-segment dicts for every config not already in cache.
+             workers: int, cache: dict, label: str = "sweep", only: dict | None = None) -> None:
+    """Fill cache[key] = list of per-segment dicts (None where not simulated).
 
+    By default every segment is simulated. `only` maps key_of(config) to the segment indices that
+    are actually needed (for example a neighbour is only ever scored on its winner's train
+    segments), which avoids simulating segments nobody reads. Segments already cached are skipped.
     get_sigs(momentum_weight) returns the SignalSet for that model setting.
     """
-    todo = [c for c in configs if key_of(c) not in cache]
-    groups: dict[float, list[dict]] = {}
-    for c in todo:
-        groups.setdefault(float(c["momentum_weight"]), []).append(c)
-    for mw, cfgs in groups.items():
+    groups: dict[float, list[tuple[dict, list[int]]]] = {}
+    seen: set = set()
+    for c in configs:
+        k = key_of(c)
+        if k in seen:
+            continue
+        seen.add(k)
+        want = sorted(only.get(k, ())) if only is not None else range(len(segs))
+        have = cache.get(k)
+        missing = [i for i in want if have is None or have[i] is None]
+        if missing:
+            groups.setdefault(float(c["momentum_weight"]), []).append((c, missing))
+    for mw, items in groups.items():
         sg = get_sigs(mw)
         jobs, owners = [], []
-        for c in cfgs:
+        for c, missing in items:
             over = {p: v for p, v in c.items()}
-            for si, seg in enumerate(segs):
-                jobs.append({"market": market, "settings": over, "seg": seg})
+            for si in missing:
+                jobs.append({"market": market, "settings": over, "seg": segs[si]})
                 owners.append((key_of(c), si))
         res = pmap(jobs, sg, s, workers, f"{label} mw={mw}")
         for (k, si), r in zip(owners, res):

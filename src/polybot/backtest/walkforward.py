@@ -64,8 +64,14 @@ def run_walkforward(get_sigs, s: Settings, n_rows: int, workers: int = 1, full: 
     for kind, tr, te in plan:
         best, _ = sw.select_best(cache, configs, tr, min_trades)
         winners[(kind, tuple(tr))] = best
-    extra = [n for w in winners.values() if w for n in sw.neighbours(w, fixed_mom)]
-    sw.evaluate(get_sigs, s, extra, segs, market, workers, cache, "neighbours")
+    # stability() only scores neighbours on their winner's train segments, so simulate just those
+    extra, need = [], {}
+    for (kind, tr), w in winners.items():
+        if w:
+            for n in sw.neighbours(w, fixed_mom):
+                extra.append(n)
+                need.setdefault(sw.key_of(n), set()).update(tr)
+    sw.evaluate(get_sigs, s, extra, segs, market, workers, cache, "neighbours", only=need)
     n_trials = len(cache)
 
     base = sw.base_config(s)

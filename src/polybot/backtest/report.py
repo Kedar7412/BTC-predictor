@@ -225,10 +225,17 @@ def build_markdown(R: dict, png: list[str], ascii_txt: str) -> str:
                     "test/train", "neighbourhood"], rows))
         A("")
         st = w["stitched_oos"]
+        mult = st["oos_multiple"]
+        big = mult is not None and mult > 100
         A(f"Stitched out-of-sample: {st['folds_with_a_winner']} folds, {st['oos_trades']} trades, "
-          f"multiple {num(st['oos_multiple'], 3)}, positive folds {st['oos_positive_folds']}, "
+          f"multiple {f'{mult:.3e}' if big else num(mult, 3)} (segments compounded back to back), "
+          f"positive folds {st['oos_positive_folds']}, "
           f"mean test/train degradation {num(st['mean_degradation_test_over_train'])}. "
           f"Default params OOS log return sum {num(st['default_params_oos_log_return_sum'], 4)}.")
+        if big:
+            A("")
+            A("**WARNING artifact: the stitched multiple is above 100x. It compounds every test segment against "
+              "the ASSUMED market, so it measures how exploitable that model is, not a real edge.**")
         A("")
         sp = w.get("fixed_split")
         if sp and sp.get("config"):
